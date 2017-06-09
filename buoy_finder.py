@@ -38,6 +38,6 @@ def parse_image(image_frame):
       M = cv2.moments(c)
       #center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
       # draw a circle on the largest thing it found
-      cv2.circle(image_frame, (int(x_loc),int(y_loc)), int(radius), (0,0,255), 2) 
+      #cv2.circle(image_frame, (int(x_loc),int(y_loc)), int(radius), (0,0,255), 2) 
       buoys.append(((x_loc,y_loc),radius))
   return buoys
