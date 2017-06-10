@@ -30,6 +30,10 @@ should_run = True
 logging.basicConfig(level=logging.DEBUG,
         format='[%(levelname)s] (%(threadName)s) %(message)s')
 
+# Calculate the mean of the values
+def mean(values):
+  return float(sum(values))/float(len(values))
+
 def process_image():
   # Buffer to hold the last 10 framerates
   times = collections.deque(maxlen=10)
@@ -37,9 +41,11 @@ def process_image():
   
   # Camera Settings
   CAM_RESOLUTION = (320, 240)
+  CAM_VIEW_ANGLE = (62.2, 48.8)
   camera = PiCamera()
   camera.resolution = CAM_RESOLUTION
   camera.framerate = 32
+  camera.rotation = 270
   
   # Array for placing captured image
   rawCapture = PiRGBArray(camera, size=CAM_RESOLUTION)
@@ -61,6 +67,17 @@ def process_image():
   
     # Causes errors if I don't do this. Yay for not understanding why...
     rawCapture.truncate(0)
+
+    # Calculate the "heading" estimate by calculating the mean X value
+    if len(results) == 0:
+      heading = 0
+    else: 
+      heading_px = mean([x for ((x,y), rad) in results])
+      # Assume that the center of the camera frame is 0 heading
+      heading_px = heading_px - (CAM_RESOLUTION[0]/2.0)
+      # Linearly map between pixels and angle to the camera.
+      # Not "correct", but it works good enough
+      heading = heading_px * float(CAM_VIEW_ANGLE[0]) / float(CAM_RESOLUTION[0])
   
     # Calculate the current framerate
     now_time = time.clock()
@@ -68,27 +85,32 @@ def process_image():
     last_time = now_time
     
     # Send the timestamp and results
-    buoys_passer.set((now_time, results))
-    # Print out the averaged framerate, and number of "buoys" found
+    buoys_passer.set((now_time, results, heading))
+    # Print out the averaged framerate, number of "buoys" found, and heading estimate
     if count%100 == 0:
-      logging.debug(str(sum(times)/len(times))+", "+str(len(results)))
+      logging.debug(str(sum(times)/len(times))+", "+
+                    str(len(results))+", "+
+                    str(heading))
     count += 10
 
   logging.debug("Done")
 
+# Thread to send the current heading, and list of buoys
 def send_results():
   last_timestamp = 0
-
   logging.debug("Starting")
+
   # Loop until signaled to exit
   while(should_run):
-    
+    # Get the list of buoys in the image
     value = buoys_passer.get()
+    # Handle if data hasn't been set yet
     if value == None:
       continue
-    (new_timestamp, new_results) = value
+    # Split out the timestamp and data
+    (new_timestamp, new_results, new_heading) = value
+    # Only send if new data was posted
     if (new_timestamp != last_timestamp):
-      logging.debug(new_timestamp)
       last_timestamp = new_timestamp
   
   logging.debug("Done")
