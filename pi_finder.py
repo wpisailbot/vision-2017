@@ -24,11 +24,17 @@ import collections
 # For debugging
 import logging
 
+# For sending data to the boat
+import websocket
+
 buoys_passer = ResultPasser()
 heading_passer = ResultPasser()
 should_run = True
 logging.basicConfig(level=logging.DEBUG,
         format='[%(levelname)s] (%(threadName)s) %(message)s')
+
+WS_SERVER = "Hercules-Linux.local"
+WS_PORT = "8000"
 
 # Calculate the mean of the values
 def mean(values):
@@ -95,10 +101,24 @@ def process_image():
 
   logging.debug("Done")
 
+# Create JSON message for the data to send
+def JSONify(buoys, heading):
+  my_string = '{ "heading":%s,' % str(heading)
+  my_string += '"heading_conf":%s,' % str(len(buoys))
+  my_string += '"buoys":['
+  for ((x,y),rad) in buoys:
+    my_string += '{"x":%d,"y":%d,"radius":%d},' % (x,y,rad)
+  my_string += ']}'
+  return my_string
+
 # Thread to send the current heading, and list of buoys
 def send_results():
   last_timestamp = 0
   logging.debug("Starting")
+
+  # Setup the websocket stuff
+  ws = websocket.WebSocket()
+  client = websocket.create_connection("ws://"+WS_SERVER+":"+WS_PORT)
 
   # Loop until signaled to exit
   while(should_run):
@@ -112,7 +132,9 @@ def send_results():
     # Only send if new data was posted
     if (new_timestamp != last_timestamp):
       last_timestamp = new_timestamp
-  
+      client.send(JSONify(new_results, new_heading))
+
+  client.close()
   logging.debug("Done")
   return
 
