@@ -44,7 +44,7 @@ def process_image():
   # Buffer to hold the last 10 framerates
   times = collections.deque(maxlen=10)
   last_time = 0.0
-  
+
   # Camera Settings
   CAM_RESOLUTION = (320, 240)
   CAM_VIEW_ANGLE = (62.2, 48.8)
@@ -52,10 +52,10 @@ def process_image():
   camera.resolution = CAM_RESOLUTION
   camera.framerate = 32
   camera.rotation = 270
-  
+
   # Array for placing captured image
   rawCapture = PiRGBArray(camera, size=CAM_RESOLUTION)
-  
+
   last_time = time.clock()
   count = 0
   logging.debug("Starting camera")
@@ -70,26 +70,26 @@ def process_image():
     results = buoy_finder.parse_image(image)
     # show the frame
     #cv2.imshow("Frame", image)
-  
+
     # Causes errors if I don't do this. Yay for not understanding why...
     rawCapture.truncate(0)
 
     # Calculate the "heading" estimate by calculating the mean X value
     if len(results) == 0:
       heading = 0
-    else: 
+    else:
       heading_px = mean([x for ((x,y), rad) in results])
       # Assume that the center of the camera frame is 0 heading
       heading_px = heading_px - (CAM_RESOLUTION[0]/2.0)
       # Linearly map between pixels and angle to the camera.
       # Not "correct", but it works good enough
       heading = heading_px * float(CAM_VIEW_ANGLE[0]) / float(CAM_RESOLUTION[0])
-  
+
     # Calculate the current framerate
     now_time = time.clock()
     times.append(1/(now_time-last_time))
     last_time = now_time
-    
+
     # Send the timestamp and results
     buoys_passer.set((now_time, results, heading))
     # Print out the averaged framerate, number of "buoys" found, and heading estimate
@@ -103,12 +103,13 @@ def process_image():
 
 # Create JSON message for the data to send
 def JSONify(buoys, heading):
-  my_string = '{ "heading":%s,' % str(heading)
+  my_string = '{"vision_data":'
+  my_string += '{ "heading":%s,' % str(heading)
   my_string += '"heading_conf":%s,' % str(len(buoys))
   my_string += '"buoys":['
   for ((x,y),rad) in buoys:
     my_string += '{"x":%d,"y":%d,"radius":%d},' % (x,y,rad)
-  my_string += ']}'
+  my_string += ']}}'
   return my_string
 
 # Thread to send the current heading, and list of buoys
