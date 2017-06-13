@@ -1,5 +1,6 @@
 import argparse
-import buoy_finder
+#from buoy_finder import parse_image
+from boat_finder import parse_image
 import cv2
 
 # Parse the arguments for this program
@@ -26,7 +27,8 @@ while (cap.isOpened()):
   for i in xrange(1+args["skip"]):
     ret, frame = cap.read()
 
-  buoys = buoy_finder.parse_image(frame)
+#  buoys = parse_image(frame)
+  buoys = parse_image(frame)
   print buoys
   # Show the image
   cv2.imshow('Result', frame)
