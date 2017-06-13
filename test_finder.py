@@ -28,11 +28,15 @@ while (cap.isOpened()):
 
   buoys = buoy_finder.parse_image(frame)
   print buoys
-
+  # Show the image
   cv2.imshow('Result', frame)
+  # Pause the video for debugging
+  if len(buoys) > 0:
+    cv2.waitKey(0) & 0xFF == ord(']')
 
   if cv2.waitKey(1) & 0xFF == ord('q'):
     break
+
 
 cap.release()
 cv2.destroyAllWindows()
