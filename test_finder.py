@@ -29,6 +29,7 @@ while (cap.isOpened()):
 
 #  buoys = parse_image(frame)
   buoys = parse_image(frame)
+  print int(sum([rad for ((x,y),rad) in buoys])),
   print buoys
   # Show the image
   cv2.imshow('Result', frame)
