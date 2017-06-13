@@ -16,6 +16,7 @@ from picamera import PiCamera
 
 # Import OpenCV stuff for passing the processed image
 import cv2
+import numpy as np
 
 # For calculating the current frame rate, and averaging the last n
 import time
@@ -35,6 +36,26 @@ logging.basicConfig(level=logging.DEBUG,
 
 WS_SERVER = "Hercules-Linux.local"
 WS_PORT = "8000"
+OUTPUT_FILENAME = 'captured-video'
+OUTPUT_FILEEXT = '.h264'
+CAM_RESOLUTION = (320, 240)
+CAM_VIEW_ANGLE = (62.2*180/3.1415, 48.8*180/3.1415)
+
+# Get an auto incrementing file count for saving video
+try:
+  my_file = open('count', 'r')
+  value = int(my_file.read())
+  my_file.close()
+except IOError:
+  value = 0
+
+my_file = open('count', 'w')
+my_file.write(str(value+1))
+my_file.close()
+
+#Open a video writer for saving frames
+fourcc = cv2.VideoWriter_fourcc('X','2','6','4')
+out = cv2.VideoWriter(OUTPUT_FILENAME+str(value)+OUTPUT_FILEEXT, fourcc, 20.0, CAM_RESOLUTION, True)
 
 # Calculate the mean of the values
 def mean(values):
@@ -46,8 +67,6 @@ def process_image():
   last_time = 0.0
 
   # Camera Settings
-  CAM_RESOLUTION = (320, 240)
-  CAM_VIEW_ANGLE = (62.2, 48.8)
   camera = PiCamera()
   camera.resolution = CAM_RESOLUTION
   camera.framerate = 32
@@ -71,6 +90,9 @@ def process_image():
     # show the frame
     #cv2.imshow("Frame", image)
 
+    # save the frame to video
+    #out.write(image)
+
     # Causes errors if I don't do this. Yay for not understanding why...
     rawCapture.truncate(0)
 
@@ -80,7 +102,7 @@ def process_image():
     else:
       heading_px = mean([x for ((x,y), rad) in results])
       # Assume that the center of the camera frame is 0 heading
-      heading_px = heading_px - (CAM_RESOLUTION[0]/2.0)
+      heading_px = (CAM_RESOLUTION[0]/2.0)-heading_px
       # Linearly map between pixels and angle to the camera.
       # Not "correct", but it works good enough
       heading = heading_px * float(CAM_VIEW_ANGLE[0]) / float(CAM_RESOLUTION[0])
@@ -99,6 +121,7 @@ def process_image():
                     str(heading))
     count += 10
 
+  out.release()
   logging.debug("Done")
 
 # Create JSON message for the data to send
