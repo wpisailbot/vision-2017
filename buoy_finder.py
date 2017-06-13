@@ -2,10 +2,10 @@ import numpy as np
 import cv2
 
 # HSV thresholds (red wraps around from 179 to 0)
-color_lower = np.array([174,140,0])
+color_lower = np.array([174,140,80])
 color_upper = np.array([180,255,255])
-color2_lower = np.array([0,140,0])
-color2_upper = np.array([10,255,255])
+color2_lower = np.array([0,140,80])
+color2_upper = np.array([5,255,255])
 
 # Kernel size for erode and dilate
 kernel = np.ones((5,5), np.uint8)
@@ -38,6 +38,6 @@ def parse_image(image_frame):
       M = cv2.moments(c)
       #center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
       # draw a circle on the largest thing it found
-      #cv2.circle(image_frame, (int(x_loc),int(y_loc)), int(radius), (0,0,255), 2) 
+      cv2.circle(image_frame, (int(x_loc),int(y_loc)), int(radius), (0,0,255), 2) 
       buoys.append(((x_loc,y_loc),radius))
   return buoys
