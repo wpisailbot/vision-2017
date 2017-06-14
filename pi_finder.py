@@ -34,12 +34,12 @@ should_run = True
 logging.basicConfig(level=logging.DEBUG,
         format='[%(levelname)s] (%(threadName)s) %(message)s')
 
-WS_SERVER = "Hercules-Linux.local"
-WS_PORT = "8000"
+WS_SERVER = "192.168.0.30"
+WS_PORT = "13000"
 OUTPUT_FILENAME = 'captured-video'
 OUTPUT_FILEEXT = '.h264'
 CAM_RESOLUTION = (320, 240)
-CAM_VIEW_ANGLE = (62.2*180/3.1415, 48.8*180/3.1415)
+CAM_VIEW_ANGLE = (62.2*3.1415/180, 48.8*3.1415/180)
 
 # Get an auto incrementing file count for saving video
 try:
@@ -78,6 +78,7 @@ def process_image():
   last_time = time.clock()
   count = 0
   logging.debug("Starting camera")
+  my_count = 0
   # Loop the image processing
   for frame in camera.capture_continuous(rawCapture, format="bgr",
                                          use_video_port=True):
@@ -128,7 +129,7 @@ def process_image():
 def JSONify(buoys, heading):
   my_string = '{"vision_data":'
   my_string += '{ "heading":%s,' % str(heading)
-  my_string += '"heading_conf":%s,' % str(len(buoys))
+  my_string += '"confidence":%s,' % str(sum([radius for ((x,y),radius) in buoys]))
   my_string += '"buoys":['
   for ((x,y),rad) in buoys:
     my_string += '{"x":%d,"y":%d,"radius":%d},' % (x,y,rad)
@@ -140,25 +141,29 @@ def send_results():
   last_timestamp = 0
   logging.debug("Starting")
 
-  # Setup the websocket stuff
-  ws = websocket.WebSocket()
-  client = websocket.create_connection("ws://"+WS_SERVER+":"+WS_PORT)
-
-  # Loop until signaled to exit
   while(should_run):
-    # Get the list of buoys in the image
-    value = buoys_passer.get()
-    # Handle if data hasn't been set yet
-    if value == None:
-      continue
-    # Split out the timestamp and data
-    (new_timestamp, new_results, new_heading) = value
-    # Only send if new data was posted
-    if (new_timestamp != last_timestamp):
-      last_timestamp = new_timestamp
-      client.send(JSONify(new_results, new_heading))
+    try: 
+      # Setup the websocket stuff
+      ws = websocket.WebSocket()
+      client = websocket.create_connection("ws://"+WS_SERVER+":"+WS_PORT)
 
-  client.close()
+      # Loop until signaled to exit
+      while(should_run):
+        # Get the list of buoys in the image
+        value = buoys_passer.get()
+        # Handle if data hasn't been set yet
+        if value == None:
+          continue
+        # Split out the timestamp and data
+        (new_timestamp, new_results, new_heading) = value
+        # Only send if new data was posted
+        if (new_timestamp != last_timestamp):
+          last_timestamp = new_timestamp
+          client.send(JSONify(new_results, new_heading))
+
+      client.close()
+    except:
+      print "Connection died.  Restarting..."
   logging.debug("Done")
   return
 
