@@ -27,7 +27,6 @@ while (cap.isOpened()):
   for i in xrange(1+args["skip"]):
     ret, frame = cap.read()
 
-#  buoys = parse_image(frame)
   buoys = parse_image(frame)
   print int(sum([rad for ((x,y),rad) in buoys])),
   print buoys
@@ -35,7 +34,7 @@ while (cap.isOpened()):
   cv2.imshow('Result', frame)
   # Pause the video for debugging
   if len(buoys) > 0:
-    cv2.waitKey(0) & 0xFF == ord(']')
+    cv2.waitKey(0)
 
   if cv2.waitKey(1) & 0xFF == ord('q'):
     break
